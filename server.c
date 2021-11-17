@@ -6,19 +6,18 @@
 #include <uk/assert.h>
 #include <unistd.h>
 #include <errno.h>
-#include <flexos/isolation.h>
 
 int run_server(int RECVBUFFERSIZE)
 {
     int sockfd, connfd, rc;
-    int len __attribute__((flexos_whitelist));
-    struct sockaddr_in cli __attribute__((flexos_whitelist));
-    struct sockaddr_in servaddr __attribute__((flexos_whitelist));
-    char *buf = flexos_malloc_whitelist(1024 * 512 * sizeof(char));
+    int len;
+    struct sockaddr_in cli;
+    struct sockaddr_in servaddr;
+    char *buf = malloc(1024 * 512 * sizeof(char));
 
-    flexos_gate_r(liblwip, sockfd, socket, AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        flexos_gate(libc, printf, FLEXOS_SHARED_LITERAL("Socket failed\n"));
+        printf("Socket failed\n");
         return 0;
     }
 
@@ -30,32 +29,32 @@ int run_server(int RECVBUFFERSIZE)
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(12345);
 
-    flexos_gate_r(liblwip, rc, bind, sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+    rc = bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
     if (rc != 0) {
-        flexos_gate(libc, printf, FLEXOS_SHARED_LITERAL("Bind failed\n"));
+        printf("Bind failed\n");
         return 0;
     }
 
-    flexos_gate_r(liblwip, rc, listen, sockfd, 5);
+    rc = listen(sockfd, 5);
     if (rc != 0) {
-        flexos_gate(libc, printf, FLEXOS_SHARED_LITERAL("Listen failed\n"));
+        printf("Listen failed\n");
         return 0;
     }
 
     len = sizeof(cli);
 
-    flexos_gate_r(liblwip, connfd, accept, sockfd, (struct sockaddr *) &cli, &len);
+    connfd = accept(sockfd, (struct sockaddr *) &cli, &len);
 
     if (connfd < 0) {
-        flexos_gate(libc, printf, FLEXOS_SHARED_LITERAL("Accept failed\n"));
+        printf("Accept failed\n");
         return 0;
     }
 
     while (1) {
-	flexos_gate_r(liblwip, rc, recv, connfd, buf, RECVBUFFERSIZE, 0);
+	rc = recv(connfd, buf, RECVBUFFERSIZE, 0);
 
         if (rc < 0) {
-            flexos_gate(libc, printf, FLEXOS_SHARED_LITERAL("Read failed with %d\n"), rc);
+            printf("Read failed with %d\n", rc);
             break;
         }
     }
